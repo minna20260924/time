@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Time & Task Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        /* Custom scrollbar for task list */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+    </style>
+</head>
+<body class="flex flex-col items-center py-10 px-4">
+
+    <div class="w-full max-w-3xl flex flex-col gap-8">
+        
+        <!-- Header / Clock Section -->
+        <header class="glass-panel rounded-3xl p-8 text-center">
+            <h1 class="text-xl md:text-2xl font-light text-indigo-300 mb-2" id="current-date">Loading date...</h1>
+            <div class="text-5xl md:text-7xl font-bold tracking-tight text-white mb-2" id="current-time">00:00:00</div>
+            <p class="text-sm text-slate-400">Current Time</p>
+        </header>
+
+        <!-- Add Task Form -->
+        <section class="glass-panel rounded-2xl p-6">
+            <h2 class="text-lg font-semibold mb-4 text-white">Add Upcoming Task</h2>
+            <form id="task-form" class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="task-name" required placeholder="What do you need to do?" 
+                    class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                
+                <input type="time" id="task-time" required
+                    class="bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full sm:w-40 [color-scheme:dark]">
+                
+                <button type="submit" 
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl px-6 py-3 transition-colors shadow-lg shadow-indigo-500/30 flex-shrink-0">
+                    Add Task
+                </button>
+            </form>
+        </section>
+
+        <!-- Task List Section -->
+        <section class="flex flex-col gap-4" id="task-list">
+            <!-- Tasks will be injected here via JS -->
+            <div class="text-center text-slate-500 py-8" id="empty-state">
+                No upcoming tasks. Add one above!
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // State
+        let tasks = JSON.parse(localStorage.getItem('dashboard_tasks')) || [];
+
+        // DOM Elements
+        const dateEl = document.getElementById('current-date');
+        const timeEl = document.getElementById('current-time');
+        const taskForm = document.getElementById('task-form');
+        const taskNameInput = document.getElementById('task-name');
+        const taskTimeInput = document.getElementById('task-time');
+        const taskListEl = document.getElementById('task-list');
+        const emptyStateEl = document.getElementById('empty-state');
+
+        // Update main clock
+        function updateClock() {
+            const now = new Date();
+            
+            // Format date
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateEl.textContent = now.toLocaleDateString(undefined, dateOptions);
+            
+            // Format time
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            timeEl.textContent = now.toLocaleTimeString(undefined, timeOptions);
+        }
+
+        // Handle form submission
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = taskNameInput.value.trim();
+            const timeStr = taskTimeInput.value;
+            
+            if (!name || !timeStr) return;
+
+            // Create target date object based on input time
+            const now = new Date();
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+
+            // If the time has already passed today, assume it's for tomorrow
+            if (targetDate < now) {
+                targetDate.setDate(targetDate.getDate() + 1);
+            }
+
+            const newTask = {
+                id: Date.now().toString(),
+                name: name,
+                targetTime: targetDate.getTime(),
+                status: 'pending' // pending, completed
+            };
+
+            tasks.push(newTask);
+            saveTasks();
+            renderTasks();
+            
+            // Reset form
+            taskNameInput.value = '';
+            taskTimeInput.value = '';
+        });
+
+        // Delete a task
+        function deleteTask(id) {
+            tasks = tasks.filter(task => task.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        // Save to local storage
+        function saveTasks() {
+            localStorage.setItem('dashboard_tasks', JSON.stringify(tasks));
+        }
+
+        // Format milliseconds into HH:MM:SS
+        function formatTimeDiff(ms) {
+            if (ms <= 0) return "00:00:00";
+            
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            return [
+                hours.toString().padStart(2, '0'),
+                minutes.toString().padStart(2, '0'),
+                seconds.toString().padStart(2, '0')
+            ].join(':');
+        }
+
+        // Render tasks to the DOM
+        function renderTasks() {
+            // Sort tasks by target time
+            tasks.sort((a, b) => a.targetTime - b.targetTime);
+
+            // Toggle empty state
+            if (tasks.length === 0) {
+                emptyStateEl.style.display = 'block';
+                // Clear other elements but keep empty state
+                Array.from(taskListEl.children).forEach(child => {
+                    if (child.id !== 'empty-state') child.remove();
+                });
+                return;
+            } else {
+                emptyStateEl.style.display = 'none';
+            }
+
+            // Remove old task elements (keep empty state hidden)
+            Array.from(taskListEl.children).forEach(child => {
+                if (child.id !== 'empty-state') child.remove();
+            });
+
+            const now = new Date().getTime();
+
+            tasks.forEach(task => {
+                const diff = task.targetTime - now;
+                const isOverdue = diff <= 0;
+                
+                const taskCard = document.createElement('div');
+                taskCard.className = `glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 ${isOverdue ? 'border-red-500' : 'border-indigo-500'}`;
+                taskCard.id = `task-${task.id}`;
+
+                const targetDateObj = new Date(task.targetTime);
+                const displayTime = targetDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                taskCard.innerHTML = `
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-white mb-1">${escapeHtml(task.name)}</h3>
+                        <p class="text-sm text-slate-400">Due at <span class="text-slate-200 font-medium">${displayTime}</span></p>
+                    </div>
+                    <div class="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400 mb-1 uppercase tracking-wider">${isOverdue ? 'Overdue' : 'Time Left'}</div>
+                            <div class="countdown text-2xl md:text-3xl font-bold font-mono ${isOverdue ? 'text-red-400' : 'text-indigo-300'}" data-target="${task.targetTime}">
+                                ${formatTimeDiff(isOverdue ? 0 : diff)}
+                            </div>
+                        </div>
+                        <button onclick="deleteTask('${task.id}')" class="text-slate-500 hover:text-red-400 transition-colors p-2" title="Remove Task">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
+                `;
+                
+                taskListEl.appendChild(taskCard);
+            });
+        }
+
+        // Update all countdowns on the screen
+        function updateCountdowns() {
+            const now = new Date().getTime();
+            const countdownElements = document.querySelectorAll('.countdown');
+            
+            countdownElements.forEach(el => {
+                const targetTime = parseInt(el.getAttribute('data-target'));
+                const diff = targetTime - now;
+                
+                if (diff <= 0) {
+                    el.textContent = "00:00:00";
+                    if (!el.classList.contains('text-red-400')) {
+                        el.classList.remove('text-indigo-300');
+                        el.classList.add('text-red-400');
+                        el.previousElementSibling.textContent = "OVERDUE";
+                        el.closest('.glass-panel').classList.remove('border-indigo-500');
+                        el.closest('.glass-panel').classList.add('border-red-500');
+                    }
+                } else {
+                    el.textContent = formatTimeDiff(diff);
+                }
+            });
+        }
+
+        // Utility to prevent XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // Main interval loop (ticks every second)
+        function gameLoop() {
+            updateClock();
+            updateCountdowns();
+        }
+
+        // Init
+        window.onload = function() {
+            updateClock();
+            renderTasks();
+            setInterval(gameLoop, 1000);
+        };
+    </script>
+</body>
+</html>
