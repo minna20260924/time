@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班級扣點計分系統</title>
+  <style>
+    :root {
+      --bg-color: #f7f9fc;
+      --card-bg: #ffffff;
+      --primary: #4a90e2;
+      --work-color: #ff9800;
+      --class-color: #4caf50;
+      --respect-color: #9c27b0;
+      --deducted-bg: #ffebee;
+      --deducted-border: #f44336;
+      --text-main: #333333;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 12px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 頂部列：週資訊與操作按鈕 */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      padding: 8px 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .week-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .week-info input {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 13px;
+      width: 110px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-export {
+      background: #2e7d32;
+      color: #fff;
+    }
+
+    .btn-export:hover {
+      background: #1b5e20;
+    }
+
+    .btn-reset {
+      background: #eceff1;
+      color: #455a64;
+    }
+
+    .btn-reset:hover {
+      background: #cfd8dc;
+    }
+
+    /* 9人緊湊全覽容器（無捲軸一頁呈現） */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+      flex-grow: 1;
+      height: calc(100vh - 75px);
+    }
+
+    .person-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 8px 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      border: 2px solid #eef2f6;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .person-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    /* 圓圈號次徽章 */
+    .circle-badge {
+      width: 32px;
+      height
